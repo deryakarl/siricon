@@ -5,16 +5,24 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 
 from .node import Node, SimJob, JobResult
+
+# ---------------------------------------------------------------------------
+# Input size limits
+# ---------------------------------------------------------------------------
+
+_MAX_CIRCUIT_OPS = 10_000
+_MAX_PARAMS      = 10_000
+_MAX_QUBITS      = 50
 
 
 # ---------------------------------------------------------------------------
 # App factory
 # ---------------------------------------------------------------------------
 
-def make_app(node: Node) -> FastAPI:
+def make_app(node: Node, api_key: str | None = None) -> FastAPI:
     """
     Build the FastAPI application for *node*.
 
@@ -26,6 +34,11 @@ def make_app(node: Node) -> FastAPI:
         thread-safe because it holds no mutable state beyond the
         ``jobs_completed`` counter (incremented atomically in CPython due to
         the GIL).
+    api_key:
+        Bearer token required on ``POST /execute``.  When ``None`` (the
+        default) authentication is skipped — suitable for local development
+        and tests.  In production this should be the key issued by the
+        registry on node registration.
 
     Returns
     -------
@@ -35,7 +48,19 @@ def make_app(node: Node) -> FastAPI:
     """
     app = FastAPI(title="zilver-node", version="0.1.0")
 
-    @app.post("/execute")
+    # --- Auth dependency ----------------------------------------------------
+
+    async def _require_auth(request: Request) -> None:
+        """Verify Bearer token.  No-op when api_key is None (test/dev mode)."""
+        if api_key is None:
+            return
+        header = request.headers.get("Authorization", "")
+        if not (header.startswith("Bearer ") and header[7:] == api_key):
+            raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+    # --- Routes -------------------------------------------------------------
+
+    @app.post("/execute", dependencies=[Depends(_require_auth)])
     async def execute(body: dict[str, Any]) -> dict[str, Any]:
         """
         Execute a simulation job on this node.
@@ -52,10 +77,31 @@ def make_app(node: Node) -> FastAPI:
 
         Errors
         ~~~~~~
+        - **401** if authentication is configured and the ``Authorization``
+          header is missing or wrong.
         - **422** if the request body cannot be parsed as a ``SimJob``.
+        - **422** if any input exceeds the allowed size limits
+          (circuit_ops > 10 000, params > 10 000, n_qubits > 50).
         - **422** if the node does not support the requested backend or the
           qubit count exceeds the node's ceiling.
         """
+        # Input size limits
+        if len(body.get("circuit_ops", [])) > _MAX_CIRCUIT_OPS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"circuit_ops length exceeds limit of {_MAX_CIRCUIT_OPS}",
+            )
+        if len(body.get("params", [])) > _MAX_PARAMS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"params length exceeds limit of {_MAX_PARAMS}",
+            )
+        if body.get("n_qubits", 0) > _MAX_QUBITS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"n_qubits exceeds limit of {_MAX_QUBITS}",
+            )
+
         try:
             job = SimJob.from_dict(body)
         except (KeyError, TypeError) as exc:
@@ -111,13 +157,16 @@ def make_app(node: Node) -> FastAPI:
 # ---------------------------------------------------------------------------
 
 def serve(
-    node: Node,
-    host: str = "0.0.0.0",
-    port: int = 7700,
-    log_level: str = "warning",
+    node:         Node,
+    host:         str = "0.0.0.0",
+    port:         int = 7700,
+    log_level:    str = "warning",
+    api_key:      str | None = None,
+    ssl_keyfile:  str | None = None,
+    ssl_certfile: str | None = None,
 ) -> None:
     """
-    Start a uvicorn HTTP server for *node* and block until interrupted.
+    Start a uvicorn HTTP(S) server for *node* and block until interrupted.
 
     This is called by the CLI (``zilver-node start``).  For tests, use
     ``make_app`` with ``fastapi.testclient.TestClient`` instead.
@@ -134,7 +183,20 @@ def serve(
     log_level:
         uvicorn log level (``"debug"``, ``"info"``, ``"warning"``, etc.).
         Default is ``"warning"`` to keep stdout clean in production.
+    api_key:
+        Bearer token required on ``POST /execute``.  ``None`` disables auth.
+    ssl_keyfile:
+        Path to the TLS private key (PEM).  When set, the server uses HTTPS.
+    ssl_certfile:
+        Path to the TLS certificate (PEM).
     """
     import uvicorn
-    app = make_app(node)
-    uvicorn.run(app, host=host, port=port, log_level=log_level)
+    app = make_app(node, api_key=api_key)
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_level=log_level,
+        ssl_keyfile=ssl_keyfile,
+        ssl_certfile=ssl_certfile,
+    )

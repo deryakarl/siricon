@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import os
 import signal
 import sys
 import threading
 import time
+from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
@@ -22,8 +24,6 @@ def _start_heartbeat(reg_client: "RegistryClient", node_id: str, interval: int =
     heartbeat calls.  Failures are silently swallowed — a transient registry
     outage should not crash the node.
     """
-    from .client import RegistryClient  # local import to avoid circular at module level
-
     def _loop() -> None:
         while True:
             time.sleep(interval)
@@ -34,6 +34,52 @@ def _start_heartbeat(reg_client: "RegistryClient", node_id: str, interval: int =
 
     t = threading.Thread(target=_loop, daemon=True)
     t.start()
+
+
+# ---------------------------------------------------------------------------
+# TLS certificate helpers
+# ---------------------------------------------------------------------------
+
+_ZILVER_DIR = Path.home() / ".zilver"
+
+
+def _resolve_tls(args: argparse.Namespace) -> tuple[str | None, str | None]:
+    """
+    Return (ssl_keyfile, ssl_certfile) to pass to uvicorn.
+
+    If both ``--ssl-key`` and ``--ssl-cert`` are provided, use them directly.
+    If neither is provided, auto-generate a self-signed cert into ``~/.zilver/``
+    on first run and reuse it on subsequent runs.
+    If only one is provided, raise an error.
+    """
+    key  = getattr(args, "ssl_key",  None)
+    cert = getattr(args, "ssl_cert", None)
+
+    if key and cert:
+        return key, cert
+
+    if (key is None) != (cert is None):
+        sys.exit("Error: --ssl-key and --ssl-cert must be provided together.")
+
+    # Auto-generate if neither is set
+    auto_key  = _ZILVER_DIR / "node.key"
+    auto_cert = _ZILVER_DIR / "node.crt"
+
+    if not (auto_key.exists() and auto_cert.exists()):
+        print("Generating self-signed TLS certificate …", file=sys.stderr)
+        try:
+            from .security import generate_self_signed_cert
+            generate_self_signed_cert(_ZILVER_DIR)
+            print(f"Certificate written to {_ZILVER_DIR}/node.{{key,crt}}", file=sys.stderr)
+        except ImportError:
+            print(
+                "Warning: cryptography package not installed; "
+                "starting without TLS. Install with: pip install zilver[network]",
+                file=sys.stderr,
+            )
+            return None, None
+
+    return str(auto_key), str(auto_cert)
 
 
 # ---------------------------------------------------------------------------
@@ -48,13 +94,15 @@ def _cmd_node_start(args: argparse.Namespace) -> None:
     ----
     1. Auto-detect chip, RAM, and qubit ceilings via ``NodeCapabilities.detect()``.
     2. Initialise a ``Node`` with the requested backends.
-    3. Register capabilities and advertised URL with the registry server.
-    4. Spawn a daemon thread that sends a heartbeat every 30 s.
-    5. Register a SIGINT/SIGTERM handler that deregisters the node cleanly.
-    6. Start uvicorn — blocks until the process is killed.
+    3. Resolve TLS certificate (explicit or auto-generated self-signed).
+    4. Resolve API key: explicit flag → Keychain → register and store.
+    5. Register capabilities and advertised URL with the registry server.
+    6. Spawn a daemon thread that sends a heartbeat every 30 s.
+    7. Register a SIGINT/SIGTERM handler that deregisters the node cleanly.
+    8. Start uvicorn — blocks until the process is killed.
     """
     from .node import Node
-    from .server import make_app
+    from .server import serve
     from .client import RegistryClient
 
     backends = [b.strip() for b in args.backends.split(",")]
@@ -64,16 +112,45 @@ def _cmd_node_start(args: argparse.Namespace) -> None:
           f"RAM: {node.caps.ram_gb}GB | backends: {node.caps.backends} | "
           f"sv_max: {node.caps.sv_qubits_max}q")
 
+    # --- TLS ----------------------------------------------------------------
+    ssl_key, ssl_cert = _resolve_tls(args)
+    scheme = "https" if ssl_cert else "http"
+
     # Construct the URL this node will advertise to the registry
     advertised_host = args.host if args.host != "0.0.0.0" else _local_ip()
-    node_url = f"http://{advertised_host}:{args.port}"
+    node_url = f"{scheme}://{advertised_host}:{args.port}"
+
+    # --- API key ------------------------------------------------------------
+    api_key: str | None = getattr(args, "api_key", None)
 
     reg_client: RegistryClient | None = None
 
     if args.registry:
         reg_client = RegistryClient(args.registry)
         try:
-            reg_client.register(node.caps, node_url)
+            if api_key is None:
+                # Try Keychain first
+                try:
+                    from .security import keychain_get
+                    api_key = keychain_get("zilver", node.caps.node_id)
+                except Exception:
+                    pass
+
+            if api_key is None:
+                # Register and receive a new key
+                reg_client.register(node.caps, node_url)
+                api_key = reg_client.last_api_key
+                if api_key:
+                    try:
+                        from .security import keychain_store
+                        keychain_store("zilver", node.caps.node_id, api_key)
+                        print("API key stored in macOS Keychain.")
+                    except Exception as exc:
+                        print(f"Warning: could not store API key in Keychain: {exc}",
+                              file=sys.stderr)
+            else:
+                reg_client.register(node.caps, node_url)
+
             print(f"Registered with registry at {args.registry}")
             _start_heartbeat(reg_client, node.caps.node_id)
         except Exception as exc:
@@ -91,11 +168,21 @@ def _cmd_node_start(args: argparse.Namespace) -> None:
     signal.signal(signal.SIGINT,  _deregister)
     signal.signal(signal.SIGTERM, _deregister)
 
-    print(f"Serving on {args.host}:{args.port}  (Ctrl-C to stop)")
+    proto = "HTTPS" if ssl_cert else "HTTP (no TLS)"
+    print(f"Serving {proto} on {args.host}:{args.port}  (Ctrl-C to stop)")
+    if ssl_cert and not getattr(args, "ssl_cert", None):
+        print("Warning: using self-signed certificate — clients need --no-verify or verify=False",
+              file=sys.stderr)
 
-    import uvicorn
-    app = make_app(node)
-    uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
+    serve(
+        node,
+        host=args.host,
+        port=args.port,
+        log_level="warning",
+        api_key=api_key,
+        ssl_keyfile=ssl_key,
+        ssl_certfile=ssl_cert,
+    )
 
 
 def _cmd_node_status(args: argparse.Namespace) -> None:
@@ -138,8 +225,28 @@ def _cmd_node_list(args: argparse.Namespace) -> None:
 def _cmd_registry_start(args: argparse.Namespace) -> None:
     """Start an in-memory capability registry server."""
     from .registry_server import serve_registry
-    print(f"Registry server listening on {args.host}:{args.port}  (Ctrl-C to stop)")
-    serve_registry(host=args.host, port=args.port)
+
+    admin_key = getattr(args, "admin_key", None) or os.environ.get("ZILVER_REGISTRY_KEY")
+
+    ssl_key, ssl_cert = _resolve_tls(args)
+
+    if admin_key:
+        print("Registry admin key is set — deregistration requires Authorization header.")
+    else:
+        print("Warning: no --admin-key set; deregistration endpoint is unprotected.",
+              file=sys.stderr)
+
+    proto = "HTTPS" if ssl_cert else "HTTP (no TLS)"
+    print(f"Registry server {proto} on {args.host}:{args.port}  (Ctrl-C to stop)")
+
+    serve_registry(
+        host=args.host,
+        port=args.port,
+        admin_key=admin_key,
+        rate_limit=True,
+        ssl_keyfile=ssl_key,
+        ssl_certfile=ssl_cert,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -190,16 +297,29 @@ def _build_node_parser() -> argparse.ArgumentParser:
     )
     p_start.add_argument(
         "--registry", default=None,
-        help="Registry server URL, e.g. http://host:7701. "
+        help="Registry server URL, e.g. https://host:7701. "
              "Omit to run standalone without registry registration.",
     )
     p_start.add_argument(
         "--node-id", dest="node_id", default=None,
-        help="Explicit node identifier (auto-generated UUID if omitted).",
+        help="Explicit node identifier (auto-detected from IOPlatformUUID if omitted).",
     )
     p_start.add_argument(
         "--wallet", default=None,
         help="Wallet address for future reward settlement (stored, not yet used).",
+    )
+    p_start.add_argument(
+        "--ssl-cert", dest="ssl_cert", default=None,
+        help="Path to TLS certificate (PEM). Auto-generates self-signed if omitted.",
+    )
+    p_start.add_argument(
+        "--ssl-key", dest="ssl_key", default=None,
+        help="Path to TLS private key (PEM). Must be paired with --ssl-cert.",
+    )
+    p_start.add_argument(
+        "--api-key", dest="api_key", default=None,
+        help="API key issued by the registry. "
+             "If omitted, reads from Keychain or registers automatically.",
     )
 
     # --- status -------------------------------------------------------------
@@ -234,6 +354,19 @@ def _build_registry_parser() -> argparse.ArgumentParser:
     p_start.add_argument(
         "--port", type=int, default=7701,
         help="TCP port to listen on (default: 7701).",
+    )
+    p_start.add_argument(
+        "--ssl-cert", dest="ssl_cert", default=None,
+        help="Path to TLS certificate (PEM). Auto-generates self-signed if omitted.",
+    )
+    p_start.add_argument(
+        "--ssl-key", dest="ssl_key", default=None,
+        help="Path to TLS private key (PEM). Must be paired with --ssl-cert.",
+    )
+    p_start.add_argument(
+        "--admin-key", dest="admin_key", default=None,
+        help="Bearer token required to deregister nodes. "
+             "Also read from ZILVER_REGISTRY_KEY env var.",
     )
 
     return parser

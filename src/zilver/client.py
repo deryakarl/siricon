@@ -33,20 +33,36 @@ class NodeClient:
     timeout:
         Per-request timeout in seconds.  Defaults to 30 s, which is generous
         for large statevector jobs on remote hardware.
+    api_key:
+        Bearer token to include in ``Authorization`` headers.  When ``None``
+        no auth header is sent.  The key is issued by the registry on node
+        registration and should match the key configured on the node server.
 
     Example
     -------
     ::
 
-        client = NodeClient("http://192.168.1.5:7700")
+        client = NodeClient("http://192.168.1.5:7700", api_key="abc123...")
         job = SimJob(circuit_ops=[], n_qubits=4, n_params=0, params=[])
         result = client.execute(job)
         assert result.verify(job)
     """
 
-    def __init__(self, url: str, timeout: float = 30.0) -> None:
+    def __init__(
+        self,
+        url:     str,
+        timeout: float = 30.0,
+        api_key: str | None = None,
+    ) -> None:
         self.url = url.rstrip("/")
+        self.api_key = api_key
         self._client = httpx.Client(timeout=timeout)
+
+    def _auth_headers(self) -> dict[str, str]:
+        key = getattr(self, "api_key", None)
+        if key:
+            return {"Authorization": f"Bearer {key}"}
+        return {}
 
     def execute(self, job: SimJob) -> JobResult:
         """
@@ -65,10 +81,14 @@ class NodeClient:
         Raises
         ------
         httpx.HTTPStatusError
-            If the node returns a 422 (unsupported backend / over capacity)
-            or any other non-2xx status.
+            If the node returns a 401 (bad API key), 422 (unsupported backend
+            / over capacity) or any other non-2xx status.
         """
-        resp = self._client.post(f"{self.url}/execute", json=job.to_dict())
+        resp = self._client.post(
+            f"{self.url}/execute",
+            json=job.to_dict(),
+            headers=self._auth_headers(),
+        )
         resp.raise_for_status()
         return JobResult(**resp.json())
 
@@ -137,24 +157,45 @@ class RegistryClient:
     timeout:
         Per-request timeout in seconds.  Discovery calls are cheap and default
         to 10 s; adjust upward on unreliable networks.
+    api_key:
+        Bearer token to include on ``register`` and ``heartbeat`` calls.
+        When ``None`` no auth header is sent.
 
     Example
     -------
     ::
 
         reg = RegistryClient("http://registry-host:7701")
-        reg.register(node.caps, node_url="http://my-mac:7700")
+        ok = reg.register(node.caps, node_url="http://my-mac:7700")
+        api_key = reg.last_api_key   # store securely, e.g. Keychain
         # ... serve jobs ...
         reg.deregister(node.caps.node_id)
     """
 
-    def __init__(self, url: str, timeout: float = 10.0) -> None:
+    def __init__(
+        self,
+        url:     str,
+        timeout: float = 10.0,
+        api_key: str | None = None,
+    ) -> None:
         self.url = url.rstrip("/")
+        self.api_key = api_key
         self._client = httpx.Client(timeout=timeout)
+        self.last_api_key: str | None = None
+
+    def _auth_headers(self) -> dict[str, str]:
+        key = getattr(self, "api_key", None)
+        if key:
+            return {"Authorization": f"Bearer {key}"}
+        return {}
 
     def register(self, caps: NodeCapabilities, node_url: str) -> bool:
         """
         Register (or re-register) a node with the registry.
+
+        The registry issues a fresh API key on each registration.  After this
+        call, the key is accessible via ``self.last_api_key``.  Callers
+        (typically the CLI) should store it securely, e.g. in macOS Keychain.
 
         Parameters
         ----------
@@ -162,8 +203,7 @@ class RegistryClient:
             The node's hardware capabilities.
         node_url:
             The reachable HTTP base URL of the node server,
-            e.g. ``"http://192.168.1.10:7700"``.  Stored by the registry so
-            coordinators can connect directly without a second lookup.
+            e.g. ``"http://192.168.1.10:7700"``.
 
         Returns
         -------
@@ -176,9 +216,15 @@ class RegistryClient:
             On 4xx / 5xx responses.
         """
         body = {"caps": caps.to_dict(), "url": node_url}
-        resp = self._client.post(f"{self.url}/nodes", json=body)
+        resp = self._client.post(
+            f"{self.url}/nodes",
+            json=body,
+            headers=self._auth_headers(),
+        )
         resp.raise_for_status()
-        return resp.json().get("registered", False)
+        data = resp.json()
+        self.last_api_key = data.get("api_key")
+        return data.get("registered", False)
 
     def deregister(self, node_id: str) -> bool:
         """
@@ -211,7 +257,10 @@ class RegistryClient:
         bool
             ``True`` on success, ``False`` if the node was not found.
         """
-        resp = self._client.post(f"{self.url}/nodes/{node_id}/heartbeat")
+        resp = self._client.post(
+            f"{self.url}/nodes/{node_id}/heartbeat",
+            headers=self._auth_headers(),
+        )
         if resp.status_code == 404:
             return False
         resp.raise_for_status()
@@ -313,6 +362,9 @@ class NetworkCoordinator:
     timeout:
         HTTP timeout forwarded to both :class:`RegistryClient` and
         :class:`NodeClient`.
+    api_key:
+        Bearer token for node ``/execute`` requests.  Passed through to
+        :class:`NodeClient` on each job submission.
 
     Example
     -------
@@ -321,7 +373,7 @@ class NetworkCoordinator:
         from zilver.client import NetworkCoordinator
         from zilver.node import SimJob
 
-        coord = NetworkCoordinator("http://registry-host:7701")
+        coord = NetworkCoordinator("http://registry-host:7701", api_key="abc...")
 
         job = SimJob(
             circuit_ops=[{"type": "h", "qubits": [0], "param_idx": None}],
@@ -331,9 +383,15 @@ class NetworkCoordinator:
         print(result.expectation)
     """
 
-    def __init__(self, registry_url: str, timeout: float = 30.0) -> None:
+    def __init__(
+        self,
+        registry_url: str,
+        timeout:      float = 30.0,
+        api_key:      str | None = None,
+    ) -> None:
         self.registry_url = registry_url
         self.timeout = timeout
+        self.api_key = api_key
         self._registry = RegistryClient(registry_url, timeout=min(timeout, 10.0))
 
     def submit(self, job: SimJob) -> JobResult:
@@ -366,7 +424,7 @@ class NetworkCoordinator:
                 f"No eligible node for backend={job.backend!r} "
                 f"n_qubits={job.n_qubits}"
             )
-        with NodeClient(node_url, timeout=self.timeout) as node_client:
+        with NodeClient(node_url, timeout=self.timeout, api_key=self.api_key) as node_client:
             return node_client.execute(job)
 
     def submit_batch(
@@ -453,7 +511,7 @@ class NetworkCoordinator:
             ts = time.perf_counter()
             slice_expectations: list[float] = []
 
-            with NodeClient(node_url, timeout=self.timeout) as nc:
+            with NodeClient(node_url, timeout=self.timeout, api_key=self.api_key) as nc:
                 for i in range(start, end):
                     import mlx.core as mx
                     row = params_batch[i]

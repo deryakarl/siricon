@@ -18,6 +18,30 @@ import numpy as np
 # Hardware detection
 # ---------------------------------------------------------------------------
 
+def _detect_hardware_uuid() -> str | None:
+    """
+    Return the IOPlatformUUID of this Apple Silicon Mac.
+
+    Reads the hardware-unique device identifier via ``ioreg``.  Returns
+    ``None`` on non-macOS systems or if the command fails.
+    """
+    try:
+        out = subprocess.check_output(
+            ["ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
+            stderr=subprocess.DEVNULL,
+            timeout=3,
+        ).decode()
+        for line in out.splitlines():
+            if "IOPlatformUUID" in line:
+                # Line format: "IOPlatformUUID" = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+                parts = line.split('"')
+                if len(parts) >= 4:
+                    return parts[-2]
+    except Exception:
+        pass
+    return None
+
+
 def _detect_chip() -> str:
     """Return Apple Silicon chip identifier, e.g. 'Apple M4 Pro'."""
     try:
@@ -99,7 +123,7 @@ class NodeCapabilities:
         chip   = _detect_chip()
         ram_gb = _detect_ram_gb()
         return cls(
-            node_id       = node_id or str(uuid.uuid4()),
+            node_id       = node_id or _detect_hardware_uuid() or str(uuid.uuid4()),
             chip          = chip,
             ram_gb        = ram_gb,
             sv_qubits_max = _sv_qubit_ceiling(ram_gb),

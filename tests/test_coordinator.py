@@ -17,8 +17,8 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.cutting import CutCircuit
-from siricon.coordinator import (
+from zilver.cutting import CutCircuit
+from zilver.coordinator import (
     recombine,
     recombine_multiplicative,
     run_local,
@@ -26,7 +26,7 @@ from siricon.coordinator import (
     NodeCoordinator,
     NodeSpec,
 )
-from siricon.circuit import Circuit
+from zilver.circuit import Circuit
 
 
 # ---------------------------------------------------------------------------

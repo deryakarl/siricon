@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Siricon vs Qiskit Aer: head-to-head landscape generation benchmark.
+Zilver vs Qiskit Aer: head-to-head landscape generation benchmark.
 
 Measures wall time for a 20x20 loss + gradient landscape on the four
 Sirius circuit families at n_qubits = 6, 8, 10, 12.
@@ -16,10 +16,10 @@ import sys
 import numpy as np
 
 
-def bench_siricon(n_qubits: int, depth: int, resolution: int, circuit_family: str) -> dict:
-    import siricon
-    from siricon.circuit import hardware_efficient, real_amplitudes, qaoa_style, efficient_su2
-    from siricon.landscape import LossLandscape
+def bench_zilver(n_qubits: int, depth: int, resolution: int, circuit_family: str) -> dict:
+    import zilver
+    from zilver.circuit import hardware_efficient, real_amplitudes, qaoa_style, efficient_su2
+    from zilver.landscape import LossLandscape
 
     factory = {
         "hardware_efficient": lambda: hardware_efficient(n_qubits, depth),
@@ -36,7 +36,7 @@ def bench_siricon(n_qubits: int, depth: int, resolution: int, circuit_family: st
     elapsed = time.perf_counter() - t0
 
     return {
-        "backend": "siricon-mlx",
+        "backend": "zilver-mlx",
         "n_qubits": n_qubits,
         "depth": depth,
         "n_params": circuit.n_params,
@@ -141,20 +141,20 @@ def run_benchmark(n_qubits: int, depth: int, resolution: int):
     families = ["hardware_efficient", "real_amplitudes", "qaoa_style"]
 
     print(f"\n{'='*72}")
-    print(f"  Siricon vs Qiskit Aer  |  {n_qubits}q  depth={depth}  grid={resolution}x{resolution}")
+    print(f"  Zilver vs Qiskit Aer  |  {n_qubits}q  depth={depth}  grid={resolution}x{resolution}")
     print(f"{'='*72}")
     print(f"  {'Circuit family':<22}  {'Backend':<14}  {'Time (s)':>9}  {'Plateau %':>10}  {'Speedup':>8}")
     print(f"  {'-'*22}  {'-'*14}  {'-'*9}  {'-'*10}  {'-'*8}")
 
     for family in families:
         aer = bench_qiskit_aer(n_qubits, depth, resolution, family)
-        sir = bench_siricon(n_qubits, depth, resolution, family)
+        sir = bench_zilver(n_qubits, depth, resolution, family)
 
         speedup = f"{aer['wall_time_s']/sir['wall_time_s']:.1f}x" if aer else "N/A"
 
         if aer:
             print(f"  {family:<22}  {'qiskit-aer':<14}  {aer['wall_time_s']:>9.2f}  {aer['plateau_coverage']*100:>9.1f}%  {'':>8}")
-        print(f"  {family:<22}  {'siricon-mlx':<14}  {sir['wall_time_s']:>9.2f}  {sir['plateau_coverage']*100:>9.1f}%  {speedup:>8}")
+        print(f"  {family:<22}  {'zilver-mlx':<14}  {sir['wall_time_s']:>9.2f}  {sir['plateau_coverage']*100:>9.1f}%  {speedup:>8}")
         print()
 
     print(f"{'='*72}\n")

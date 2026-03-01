@@ -6,7 +6,7 @@ batched MLX dispatch over a 20x20 parameter grid.
 
 Performance model (n_qubits=8, depth=4, 20x20 grid, 2 swept params):
 - Qiskit Aer (sequential): 400 evaluations + 1600 shift evaluations = 2000 calls
-- Siricon (batched vmap):   1 Metal dispatch covering all 2000 evaluations
+- Zilver (batched vmap):   1 Metal dispatch covering all 2000 evaluations
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ class LandscapeResult:
     n_params: int
     resolution: int
     wall_time_seconds: float
-    backend: str = "siricon-mlx"
+    backend: str = "zilver-mlx"
     metadata: dict = field(default_factory=dict)
 
     def plateau_coverage(self, threshold: float = 0.1) -> float:
@@ -59,8 +59,8 @@ class LossLandscape:
     provided). The full grid is evaluated in a single mx.vmap dispatch.
 
     Example:
-        from siricon.circuit import hardware_efficient
-        from siricon.landscape import LossLandscape
+        from zilver.circuit import hardware_efficient
+        from zilver.landscape import LossLandscape
 
         circuit = hardware_efficient(n_qubits=6, depth=3)
         landscape = LossLandscape(circuit, sweep_params=(0, 1), resolution=20)
@@ -71,7 +71,7 @@ class LossLandscape:
 
     def __init__(
         self,
-        circuit,  # siricon.circuit.Circuit
+        circuit,  # zilver.circuit.Circuit
         sweep_params: tuple[int, int] = (0, 1),
         resolution: int = 20,
         fixed_params: np.ndarray | None = None,
@@ -182,7 +182,7 @@ def landscape_from_qasm(
 ) -> LandscapeResult:
     """
     Convenience function: parse a QASM string and compute the landscape.
-    Bridges the Sirius monorepo's existing Qiskit QASM circuits into Siricon.
+    Bridges the Sirius monorepo's existing Qiskit QASM circuits into Zilver.
     """
     from .qasm_bridge import circuit_from_qasm
     circuit = circuit_from_qasm(qasm_str)

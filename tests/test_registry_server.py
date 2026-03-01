@@ -23,8 +23,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 import sys; sys.path.insert(0, "src")
-from siricon.registry import Registry
-from siricon.registry_server import make_registry_app
+from zilver.registry import Registry
+from zilver.registry_server import make_registry_app
 
 
 # ---------------------------------------------------------------------------

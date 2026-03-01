@@ -43,11 +43,11 @@ import pytest
 import respx
 
 import sys; sys.path.insert(0, "src")
-from siricon.node import Node, NodeCapabilities, SimJob, JobResult, _compute_proof
-from siricon.registry import Registry
-from siricon.server import make_app
-from siricon.registry_server import make_registry_app
-from siricon.client import NodeClient, RegistryClient, NetworkCoordinator
+from zilver.node import Node, NodeCapabilities, SimJob, JobResult, _compute_proof
+from zilver.registry import Registry
+from zilver.server import make_app
+from zilver.registry_server import make_registry_app
+from zilver.client import NodeClient, RegistryClient, NetworkCoordinator
 
 
 # ---------------------------------------------------------------------------

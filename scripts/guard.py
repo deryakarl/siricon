@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Siricon repo guard: scans staged (or all tracked) files for accidental
+Zilver repo guard: scans staged (or all tracked) files for accidental
 inclusion of secrets, internal references, or sensitive data.
 
 Used as a pre-commit hook and can be run standalone:

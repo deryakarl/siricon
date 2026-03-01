@@ -1,5 +1,5 @@
 """
-Siricon node daemon.
+Zilver node daemon.
 
 Each Apple Silicon device runs a node that:
   - Detects local hardware capabilities (chip, RAM, qubit ceiling)
@@ -7,7 +7,7 @@ Each Apple Silicon device runs a node that:
   - Returns results with a deterministic job proof for verification
   - (Future) Registers with the capability registry and listens on P2P bus
 
-Entry point: siricon-node start --backends sv,dm --wallet <addr>
+Entry point: zilver-node start --backends sv,dm --wallet <addr>
 
 Job routing:
   sv  — statevector (simulator.py),  up to 32-34 qubits
@@ -246,7 +246,7 @@ def _build_circuit_from_ops(ops: list[dict], n_qubits: int, n_params: int):
 
 class Node:
     """
-    A Siricon simulation node.
+    A Zilver simulation node.
 
     Executes SimJobs locally using the appropriate backend (sv/dm/tn).
     In the distributed network, the node daemon runs alongside a P2P listener
@@ -384,7 +384,7 @@ def job_from_circuit(
     Serialize a Circuit into a SimJob for dispatch to a node.
 
     Args:
-        circuit:    a siricon Circuit instance
+        circuit:    a zilver Circuit instance
         params:     parameter vector
         observable: "sum_z" | "z0"
         backend:    "sv" | "dm" | "tn"

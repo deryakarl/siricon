@@ -1,7 +1,7 @@
 """
 Node HTTP server.
 
-Exposes a Siricon simulation node over HTTP so that coordinators and clients
+Exposes a Zilver simulation node over HTTP so that coordinators and clients
 on other machines can submit jobs and retrieve results without any shared memory.
 
 Architecture note
@@ -31,8 +31,8 @@ Example
 -------
 ::
 
-    from siricon.node import Node
-    from siricon.server import make_app, serve
+    from zilver.node import Node
+    from zilver.server import make_app, serve
 
     node = Node.start(backends=["sv", "dm"])
     serve(node, host="0.0.0.0", port=7700)   # blocks until Ctrl-C
@@ -59,7 +59,7 @@ def make_app(node: Node) -> FastAPI:
     Parameters
     ----------
     node:
-        A fully initialised :class:`~siricon.node.Node` instance.  The same
+        A fully initialised :class:`~zilver.node.Node` instance.  The same
         node object is reused across all requests; ``Node.execute`` is
         thread-safe because it holds no mutable state beyond the
         ``jobs_completed`` counter (incremented atomically in CPython due to
@@ -71,7 +71,7 @@ def make_app(node: Node) -> FastAPI:
         The application instance.  Pass it to ``uvicorn.run`` or wrap it with
         ``fastapi.testclient.TestClient`` for testing.
     """
-    app = FastAPI(title="siricon-node", version="0.1.0")
+    app = FastAPI(title="zilver-node", version="0.1.0")
 
     @app.post("/execute")
     async def execute(body: dict[str, Any]) -> dict[str, Any]:
@@ -157,7 +157,7 @@ def serve(
     """
     Start a uvicorn HTTP server for *node* and block until interrupted.
 
-    This is called by the CLI (``siricon-node start``).  For tests, use
+    This is called by the CLI (``zilver-node start``).  For tests, use
     ``make_app`` with ``fastapi.testclient.TestClient`` instead.
 
     Parameters

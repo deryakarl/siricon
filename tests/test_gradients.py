@@ -6,8 +6,8 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.circuit import hardware_efficient, real_amplitudes
-from siricon.gradients import param_shift_gradient, gradient_variance
+from zilver.circuit import hardware_efficient, real_amplitudes
+from zilver.gradients import param_shift_gradient, gradient_variance
 
 
 class TestParamShift:
@@ -45,7 +45,7 @@ class TestParamShift:
 
     def test_zero_gradient_at_symmetry_point(self):
         """RY at theta=0 with |0> input: d/d(theta) <Z> at theta=0 should be 0."""
-        from siricon.circuit import Circuit
+        from zilver.circuit import Circuit
         c = Circuit(1)
         c.ry(qubit=0, param_idx=0)
         f = c.compile(observable="z0")

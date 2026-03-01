@@ -6,8 +6,8 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.circuit import hardware_efficient, real_amplitudes, qaoa_style
-from siricon.landscape import LossLandscape, LandscapeResult
+from zilver.circuit import hardware_efficient, real_amplitudes, qaoa_style
+from zilver.landscape import LossLandscape, LandscapeResult
 
 
 class TestLossLandscape:
@@ -61,7 +61,7 @@ class TestLossLandscape:
 
         assert result.n_qubits == 4
         assert result.resolution == 5
-        assert result.backend == "siricon-mlx"
+        assert result.backend == "zilver-mlx"
         assert result.wall_time_seconds > 0
         assert result.metadata["sweep_params"] == [2, 3]
 

@@ -1,7 +1,7 @@
 """
 Registry HTTP server.
 
-Exposes the in-process :class:`~siricon.registry.Registry` over HTTP so that
+Exposes the in-process :class:`~zilver.registry.Registry` over HTTP so that
 nodes on different machines can register, send heartbeats, and be discovered
 by coordinators without any shared memory or direct imports.
 
@@ -32,7 +32,7 @@ Example
 -------
 ::
 
-    from siricon.registry_server import make_registry_app, serve_registry
+    from zilver.registry_server import make_registry_app, serve_registry
 
     app = make_registry_app()           # fresh in-memory registry
     serve_registry(host="0.0.0.0", port=7701)   # blocks until Ctrl-C
@@ -59,7 +59,7 @@ def make_registry_app(registry: Registry | None = None) -> FastAPI:
     Parameters
     ----------
     registry:
-        An existing :class:`~siricon.registry.Registry` instance to wrap.
+        An existing :class:`~zilver.registry.Registry` instance to wrap.
         If ``None``, a fresh in-memory registry is created.  Passing an
         existing instance is useful in tests where the caller needs direct
         access to registry state.
@@ -77,7 +77,7 @@ def make_registry_app(registry: Registry | None = None) -> FastAPI:
     # transport-agnostic.
     node_urls: dict[str, str] = {}
 
-    app = FastAPI(title="siricon-registry", version="0.1.0")
+    app = FastAPI(title="zilver-registry", version="0.1.0")
 
     # --- Registration -------------------------------------------------------
 
@@ -219,7 +219,7 @@ def serve_registry(
     Start a uvicorn HTTP server for the capability registry and block until
     interrupted.
 
-    This is called by the CLI (``siricon-registry start``).  For tests, use
+    This is called by the CLI (``zilver-registry start``).  For tests, use
     ``make_registry_app`` with ``fastapi.testclient.TestClient`` instead.
 
     Parameters

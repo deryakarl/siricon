@@ -6,8 +6,8 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.simulator import apply_gate, expectation_z, expectation_pauli_sum, StateVector
-from siricon import gates as G
+from zilver.simulator import apply_gate, expectation_z, expectation_pauli_sum, StateVector
+from zilver import gates as G
 
 
 def ev(x):

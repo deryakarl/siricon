@@ -194,7 +194,7 @@ class NodeCoordinator:
     Distributes SubcircuitPairs across a pool of NodeSpecs and collects results.
 
     In the full distributed network, each NodeSpec corresponds to a remote
-    Apple Silicon device running siricon-node. Here we simulate distribution
+    Apple Silicon device running zilver-node. Here we simulate distribution
     locally: each pair is routed to the first node with sufficient qubit capacity.
 
     Usage:

@@ -8,9 +8,9 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon import gates as G
-from siricon.circuit import Circuit, variational_simulator
-from siricon.gradients import param_shift_gradient
+from zilver import gates as G
+from zilver.circuit import Circuit, variational_simulator
+from zilver.gradients import param_shift_gradient
 
 
 def to_np(m):
@@ -35,7 +35,7 @@ class TestToffoli:
 
     def test_toffoli_flips_target_when_both_controls_one(self):
         # |110> (index 6) -> |111> (index 7)
-        from siricon.simulator import apply_gate
+        from zilver.simulator import apply_gate
         state = mx.array([0,0,0,0,0,0,1,0], dtype=mx.complex64)
         result = apply_gate(state, G.Toffoli(), [0, 1, 2], 3)
         mx.eval(result)
@@ -44,7 +44,7 @@ class TestToffoli:
 
     def test_toffoli_no_flip_single_control(self):
         # |100> (index 4): only one control active, target unchanged
-        from siricon.simulator import apply_gate
+        from zilver.simulator import apply_gate
         state = mx.array([0,0,0,0,1,0,0,0], dtype=mx.complex64)
         result = apply_gate(state, G.Toffoli(), [0, 1, 2], 3)
         mx.eval(result)
@@ -76,7 +76,7 @@ class TestFredkin:
 
     def test_fredkin_swaps_when_control_one(self):
         # |101> (index 5): control=1, q1=0, q2=1 -> swap -> |110> (index 6)
-        from siricon.simulator import apply_gate
+        from zilver.simulator import apply_gate
         state = mx.array([0,0,0,0,0,1,0,0], dtype=mx.complex64)
         result = apply_gate(state, G.Fredkin(), [0, 1, 2], 3)
         mx.eval(result)
@@ -85,7 +85,7 @@ class TestFredkin:
 
     def test_fredkin_no_swap_when_control_zero(self):
         # |001> (index 1): control=0, no swap
-        from siricon.simulator import apply_gate
+        from zilver.simulator import apply_gate
         state = mx.array([0,1,0,0,0,0,0,0], dtype=mx.complex64)
         result = apply_gate(state, G.Fredkin(), [0, 1, 2], 3)
         mx.eval(result)

@@ -18,7 +18,7 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.tensor_network import (
+from zilver.tensor_network import (
     init_mps,
     apply_single_qubit_gate_mps,
     apply_two_qubit_gate_mps,
@@ -31,9 +31,9 @@ from siricon.tensor_network import (
     hardware_efficient_mps,
     qaoa_style_mps,
 )
-from siricon.circuit import Circuit, hardware_efficient, qaoa_style
-from siricon.simulator import apply_gate, expectation_pauli_sum
-from siricon import gates as G
+from zilver.circuit import Circuit, hardware_efficient, qaoa_style
+from zilver.simulator import apply_gate, expectation_pauli_sum
+from zilver import gates as G
 
 
 def sv_init(n):

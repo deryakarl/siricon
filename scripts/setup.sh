@@ -1,5 +1,5 @@
 #!/bin/bash
-# Siricon local setup for Apple Silicon
+# Zilver local setup for Apple Silicon
 # Works on MacBook Pro/Air M-series and Mac Mini M-series
 # Usage: bash scripts/setup.sh
 
@@ -7,14 +7,14 @@ set -e
 
 RED='\033[31m'; YELLOW='\033[33m'; GREEN='\033[32m'; RESET='\033[0m'
 
-info()  { echo -e "${GREEN}[siricon]${RESET} $1"; }
-warn()  { echo -e "${YELLOW}[siricon]${RESET} $1"; }
-abort() { echo -e "${RED}[siricon] error:${RESET} $1"; exit 1; }
+info()  { echo -e "${GREEN}[zilver]${RESET} $1"; }
+warn()  { echo -e "${YELLOW}[zilver]${RESET} $1"; }
+abort() { echo -e "${RED}[zilver] error:${RESET} $1"; exit 1; }
 
 # 1. Verify Apple Silicon
 ARCH=$(uname -m)
 if [ "$ARCH" != "arm64" ]; then
-    abort "Siricon is optimized for Apple Silicon (arm64). Detected: $ARCH"
+    abort "Zilver is optimized for Apple Silicon (arm64). Detected: $ARCH"
 fi
 
 CHIP=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "unknown")
@@ -31,8 +31,8 @@ if [ "$PY_MAJOR" -lt 3 ] || { [ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 10 ]; }
 fi
 info "Python $PY_VERSION OK"
 
-# 3. Install siricon + dev deps
-info "Installing siricon..."
+# 3. Install zilver + dev deps
+info "Installing zilver..."
 pip install -e ".[dev]" -q
 info "Package installed"
 
@@ -68,7 +68,7 @@ python -m pytest tests/ -q --tb=short
 info "All tests passed"
 
 echo ""
-echo -e "${GREEN}Siricon is ready on $(sysctl -n hw.model 2>/dev/null || echo 'your Mac').${RESET}"
+echo -e "${GREEN}Zilver is ready on $(sysctl -n hw.model 2>/dev/null || echo 'your Mac').${RESET}"
 echo ""
 echo "  python examples/barren_plateau.py   # run the demo"
 echo "  make test                            # run tests"

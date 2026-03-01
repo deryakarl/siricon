@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Barren plateau detection demo using Siricon.
+Barren plateau detection demo using Zilver.
 
 Demonstrates the key use case: detecting vanishing gradients in deep
 VQA circuits by comparing gradient variance across depths on Apple Silicon.
@@ -11,9 +11,9 @@ import numpy as np
 import sys
 
 sys.path.insert(0, "src")
-from siricon.circuit import hardware_efficient
-from siricon.landscape import LossLandscape
-from siricon.gradients import gradient_variance
+from zilver.circuit import hardware_efficient
+from zilver.landscape import LossLandscape
+from zilver.gradients import gradient_variance
 
 
 N_QUBITS = 6

@@ -1,5 +1,5 @@
 """
-HTTP clients for the Siricon distributed network.
+HTTP clients for the Zilver distributed network.
 
 Provides three classes:
 
@@ -24,8 +24,8 @@ Example
 -------
 ::
 
-    from siricon.client import NetworkCoordinator
-    from siricon.node import SimJob
+    from zilver.client import NetworkCoordinator
+    from zilver.node import SimJob
 
     coord = NetworkCoordinator("http://registry-host:7701")
     job = SimJob(
@@ -55,9 +55,9 @@ import time
 
 class NodeClient:
     """
-    HTTP client for a single remote Siricon node.
+    HTTP client for a single remote Zilver node.
 
-    Wraps the REST endpoints exposed by :func:`~siricon.server.make_app`.
+    Wraps the REST endpoints exposed by :func:`~zilver.server.make_app`.
     All methods are synchronous and raise ``httpx.HTTPStatusError`` on non-2xx
     responses and ``httpx.ConnectError`` / ``httpx.TimeoutException`` on
     network failures — callers should handle these as appropriate.
@@ -87,7 +87,7 @@ class NodeClient:
 
     def execute(self, job: SimJob) -> JobResult:
         """
-        Submit a :class:`~siricon.node.SimJob` to the remote node.
+        Submit a :class:`~zilver.node.SimJob` to the remote node.
 
         Parameters
         ----------
@@ -160,10 +160,10 @@ class NodeClient:
 
 class RegistryClient:
     """
-    HTTP client for the Siricon capability registry.
+    HTTP client for the Zilver capability registry.
 
     Wraps the REST endpoints exposed by
-    :func:`~siricon.registry_server.make_registry_app`.
+    :func:`~zilver.registry_server.make_registry_app`.
     Used by node daemons for self-registration and by
     :class:`NetworkCoordinator` for node discovery.
 
@@ -355,8 +355,8 @@ class NetworkCoordinator:
     -------
     ::
 
-        from siricon.client import NetworkCoordinator
-        from siricon.node import SimJob
+        from zilver.client import NetworkCoordinator
+        from zilver.node import SimJob
 
         coord = NetworkCoordinator("http://registry-host:7701")
 
@@ -378,7 +378,7 @@ class NetworkCoordinator:
         Submit a single job to the best available node.
 
         Performs registry lookup → node selection → remote execution in one
-        call.  The returned :class:`~siricon.node.JobResult` includes a
+        call.  The returned :class:`~zilver.node.JobResult` includes a
         SHA-256 proof that the caller can verify with ``result.verify(job)``.
 
         Parameters
@@ -417,14 +417,14 @@ class NetworkCoordinator:
         Evaluate a circuit at N parameter sets, distributed across online nodes.
 
         Queries the registry for all eligible nodes, splits ``params_batch``
-        evenly across them, submits each slice as a :class:`~siricon.node.SimJob`
+        evenly across them, submits each slice as a :class:`~zilver.node.SimJob`
         with a single parameter set (one job per row), and assembles the
         results in original order.
 
         Parameters
         ----------
         circuit:
-            A :class:`~siricon.circuit.Circuit` instance.
+            A :class:`~zilver.circuit.Circuit` instance.
         params_batch:
             An ``(N, n_params)`` MLX array of parameter vectors.
         backend:
@@ -444,9 +444,9 @@ class NetworkCoordinator:
 
         Notes
         -----
-        Each parameter set is submitted as a separate :class:`~siricon.node.SimJob`.
+        Each parameter set is submitted as a separate :class:`~zilver.node.SimJob`.
         For large batches on a high-latency network, using the local
-        :func:`~siricon.batch_distributor.run_local_batch` is faster because
+        :func:`~zilver.batch_distributor.run_local_batch` is faster because
         it dispatches all evaluations in a single Metal vmap call.
         This method is intended for genuinely distributed hardware where
         each node runs the job on different physical silicon.

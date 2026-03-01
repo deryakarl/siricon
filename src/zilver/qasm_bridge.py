@@ -1,8 +1,8 @@
 """
-QASM bridge: convert Qiskit QASM 2.0 circuits into Siricon Circuit objects.
+QASM bridge: convert Qiskit QASM 2.0 circuits into Zilver Circuit objects.
 
 This lets the Sirius monorepo pass existing Qiskit-generated circuits directly
-into Siricon for MLX-accelerated landscape computation without rewriting
+into Zilver for MLX-accelerated landscape computation without rewriting
 circuit generation code.
 """
 
@@ -40,7 +40,7 @@ _SINGLE_QUBIT_PARAM = {
 
 def circuit_from_qasm(qasm_str: str) -> Circuit:
     """
-    Parse a QASM 2.0 string and return a Siricon Circuit.
+    Parse a QASM 2.0 string and return a Zilver Circuit.
 
     Parameter handling: each unique QASM parameter name is assigned a
     sequential index in the output parameter vector.

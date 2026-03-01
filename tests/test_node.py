@@ -20,7 +20,7 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.node import (
+from zilver.node import (
     Node,
     NodeCapabilities,
     SimJob,
@@ -30,7 +30,7 @@ from siricon.node import (
     _sv_qubit_ceiling,
     _dm_qubit_ceiling,
 )
-from siricon.circuit import Circuit
+from zilver.circuit import Circuit
 
 
 # ---------------------------------------------------------------------------

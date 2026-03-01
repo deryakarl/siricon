@@ -17,7 +17,7 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.cutting import (
+from zilver.cutting import (
     wire_cut_terms,
     cnot_cut_terms,
     CutCircuit,
@@ -26,7 +26,7 @@ from siricon.cutting import (
     gate_cut_overhead,
     max_feasible_cuts,
 )
-from siricon.circuit import Circuit
+from zilver.circuit import Circuit
 
 
 # ---------------------------------------------------------------------------

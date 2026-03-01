@@ -6,7 +6,7 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon import gates as G
+from zilver import gates as G
 
 
 def to_np(m):

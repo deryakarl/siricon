@@ -46,9 +46,9 @@ import math
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.node import Node, NodeCapabilities, SimJob, JobResult, _compute_proof
-from siricon.registry import Registry
-from siricon.verification import (
+from zilver.node import Node, NodeCapabilities, SimJob, JobResult, _compute_proof
+from zilver.registry import Registry
+from zilver.verification import (
     VerificationResult,
     SpotCheckResult,
     SlashEvent,

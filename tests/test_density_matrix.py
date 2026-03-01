@@ -15,7 +15,7 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.density_matrix import (
+from zilver.density_matrix import (
     apply_gate_dm,
     apply_kraus_channel,
     depolarizing_kraus,
@@ -28,8 +28,8 @@ from siricon.density_matrix import (
     trace,
     NoisyCircuit,
 )
-from siricon.circuit import Circuit
-from siricon import gates as G
+from zilver.circuit import Circuit
+from zilver import gates as G
 
 
 def ev(x):
@@ -95,7 +95,7 @@ class TestPureStateEquivalence:
         np.testing.assert_allclose(to_np(rho), to_np(rho_ref), atol=1e-5)
 
     def test_expectation_z_matches_sv(self):
-        from siricon.simulator import apply_gate, expectation_z
+        from zilver.simulator import apply_gate, expectation_z
         n = 3
         gates_seq = [(G.H(), [0]), (G.X(), [1]), (G.CNOT(), [0, 2])]
 
@@ -116,7 +116,7 @@ class TestPureStateEquivalence:
             assert abs(sv_val - dm_val) < 1e-5, f"Qubit {q}: sv={sv_val:.4f} dm={dm_val:.4f}"
 
     def test_sum_z_matches_sv(self):
-        from siricon.simulator import apply_gate, expectation_pauli_sum
+        from zilver.simulator import apply_gate, expectation_pauli_sum
         n = 4
 
         # Random circuit of single-qubit gates

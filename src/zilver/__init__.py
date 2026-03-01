@@ -1,14 +1,14 @@
 """
-Siricon — MLX-native quantum circuit simulator for Apple Silicon.
+Zilver — MLX-native quantum circuit simulator for Apple Silicon.
 
-Sirius benchmark + Silicon hardware = Siricon.
+Sirius benchmark + Silicon hardware = Zilver.
 
 Core simulation
 ---------------
 ``Circuit``, ``LossLandscape``, ``param_shift_gradient`` and the gate
 library are available without any optional dependencies.
 
-Distributed network (requires ``pip install siricon[network]``)
+Distributed network (requires ``pip install zilver[network]``)
 ---------------------------------------------------------------
 ``NodeClient``, ``RegistryClient``, and ``NetworkCoordinator`` are imported
 lazily so that the simulator remains usable without FastAPI / httpx installed.
@@ -46,11 +46,11 @@ def __getattr__(name: str):
     Lazy import for network-layer symbols.
 
     Defers importing ``fastapi`` and ``httpx`` until the caller actually
-    references a network class, so that ``import siricon`` never fails on
+    references a network class, so that ``import zilver`` never fails on
     machines where the ``[network]`` extras are not installed.
     """
     _network = {"NodeClient", "RegistryClient", "NetworkCoordinator"}
     if name in _network:
         from .client import NodeClient, RegistryClient, NetworkCoordinator  # noqa: F401
         return locals()[name]
-    raise AttributeError(f"module 'siricon' has no attribute {name!r}")
+    raise AttributeError(f"module 'zilver' has no attribute {name!r}")

@@ -6,7 +6,7 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.circuit import (
+from zilver.circuit import (
     Circuit, hardware_efficient, real_amplitudes, qaoa_style, efficient_su2
 )
 
@@ -157,7 +157,7 @@ class TestU3Gate:
 
     def test_u3_gradient_via_param_shift(self):
         """Parameter shift gradients must be non-trivial for U3."""
-        from siricon.gradients import param_shift_gradient
+        from zilver.gradients import param_shift_gradient
         c = Circuit(1)
         c.u3(qubit=0, theta_idx=0, phi_idx=1, lam_idx=2)
         f = c.compile(observable="z0")

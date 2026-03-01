@@ -1,9 +1,9 @@
 """
-Command-line interface for the Siricon distributed network.
+Command-line interface for the Zilver distributed network.
 
 Provides two top-level commands registered as package scripts:
 
-``siricon-node``
+``zilver-node``
     Manage a simulation node daemon.
 
     start
@@ -16,7 +16,7 @@ Provides two top-level commands registered as package scripts:
     nodes
         List all online nodes registered with a registry server.
 
-``siricon-registry``
+``zilver-registry``
     Start an in-memory capability registry server.
 
     start
@@ -27,16 +27,16 @@ Typical two-Mac setup
 ::
 
     # Mac A — run the registry and a first simulation node
-    siricon-registry start --port 7701 &
-    siricon-node start --backends sv,dm --port 7700 --registry http://localhost:7701
+    zilver-registry start --port 7701 &
+    zilver-node start --backends sv,dm --port 7700 --registry http://localhost:7701
 
     # Mac B — add a second simulation node
-    siricon-node start --backends sv --port 7700 --registry http://192.168.x.x:7701
+    zilver-node start --backends sv --port 7700 --registry http://192.168.x.x:7701
 
     # Any Mac — submit a job programmatically
     python -c "
-    from siricon.client import NetworkCoordinator
-    from siricon.node import SimJob
+    from zilver.client import NetworkCoordinator
+    from zilver.node import SimJob
     coord = NetworkCoordinator('http://192.168.x.x:7701')
     job = SimJob(circuit_ops=[], n_qubits=4, n_params=0, params=[], backend='sv')
     print(coord.submit(job).expectation)
@@ -46,14 +46,14 @@ Usage
 -----
 ::
 
-    siricon-node start [--backends sv,dm,tn] [--port 7700]
+    zilver-node start [--backends sv,dm,tn] [--port 7700]
                        [--registry URL] [--node-id ID] [--wallet ADDR]
                        [--host HOST]
 
-    siricon-node status --registry URL
-    siricon-node nodes  --registry URL
+    zilver-node status --registry URL
+    zilver-node nodes  --registry URL
 
-    siricon-registry start [--host HOST] [--port 7701]
+    zilver-registry start [--host HOST] [--port 7701]
 """
 
 from __future__ import annotations
@@ -93,7 +93,7 @@ def _start_heartbeat(reg_client: "RegistryClient", node_id: str, interval: int =
 
 
 # ---------------------------------------------------------------------------
-# siricon-node commands
+# zilver-node commands
 # ---------------------------------------------------------------------------
 
 def _cmd_node_start(args: argparse.Namespace) -> None:
@@ -188,7 +188,7 @@ def _cmd_node_list(args: argparse.Namespace) -> None:
 
 
 # ---------------------------------------------------------------------------
-# siricon-registry commands
+# zilver-registry commands
 # ---------------------------------------------------------------------------
 
 def _cmd_registry_start(args: argparse.Namespace) -> None:
@@ -225,8 +225,8 @@ def _local_ip() -> str:
 
 def _build_node_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="siricon-node",
-        description="Siricon simulation node daemon.",
+        prog="zilver-node",
+        description="Zilver simulation node daemon.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -277,8 +277,8 @@ def _build_node_parser() -> argparse.ArgumentParser:
 
 def _build_registry_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="siricon-registry",
-        description="Siricon capability registry server.",
+        prog="zilver-registry",
+        description="Zilver capability registry server.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -300,7 +300,7 @@ def _build_registry_parser() -> argparse.ArgumentParser:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    """Entry point for the ``siricon-node`` script."""
+    """Entry point for the ``zilver-node`` script."""
     parser = _build_node_parser()
     args = parser.parse_args()
 
@@ -313,7 +313,7 @@ def main() -> None:
 
 
 def main_registry() -> None:
-    """Entry point for the ``siricon-registry`` script."""
+    """Entry point for the ``zilver-registry`` script."""
     parser = _build_registry_parser()
     args = parser.parse_args()
 

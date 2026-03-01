@@ -29,8 +29,8 @@ import time
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.node import NodeCapabilities, SimJob
-from siricon.registry import Registry, RegistryEntry
+from zilver.node import NodeCapabilities, SimJob
+from zilver.registry import Registry, RegistryEntry
 
 
 # ---------------------------------------------------------------------------

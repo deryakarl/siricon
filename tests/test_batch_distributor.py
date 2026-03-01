@@ -32,11 +32,11 @@ import mlx.core as mx
 import pytest
 
 import sys; sys.path.insert(0, "src")
-from siricon.circuit import Circuit, hardware_efficient
-from siricon.cutting import CutCircuit
-from siricon.node import NodeCapabilities
-from siricon.registry import Registry
-from siricon.batch_distributor import (
+from zilver.circuit import Circuit, hardware_efficient
+from zilver.cutting import CutCircuit
+from zilver.node import NodeCapabilities
+from zilver.registry import Registry
+from zilver.batch_distributor import (
     _split_indices,
     run_local_batch,
     run_cut_local_batch,
@@ -248,7 +248,7 @@ class TestRunCutLocalBatch:
 
     def test_matches_run_local_per_eval(self):
         """Each cut batch result must match a per-param run_local() call."""
-        from siricon.coordinator import run_local
+        from zilver.coordinator import run_local
         n, p = 4, 2
         c = Circuit(n)
         for q in range(n):

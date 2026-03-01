@@ -23,8 +23,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 import sys; sys.path.insert(0, "src")
-from siricon.node import Node, NodeCapabilities, SimJob
-from siricon.server import make_app
+from zilver.node import Node, NodeCapabilities, SimJob
+from zilver.server import make_app
 
 
 # ---------------------------------------------------------------------------
@@ -152,7 +152,7 @@ class TestExecute:
         c = _client()
         job = SimJob(**{k: v for k, v in _h_job().items()})
         resp_json = c.post("/execute", json=job.to_dict()).json()
-        from siricon.node import JobResult
+        from zilver.node import JobResult
         result = JobResult(**resp_json)
         assert result.verify(job) is True
 

@@ -121,7 +121,7 @@ def run_local_batch(
     Evaluate a circuit at N parameter sets using a single vmap dispatch.
 
     Args:
-        circuit:      a siricon Circuit instance
+        circuit:      a zilver Circuit instance
         params_batch: (N, n_params) array of parameter sets
         observable:   passed to circuit.compile()
 
@@ -229,8 +229,8 @@ class BatchDistributor:
     In the full P2P network each slice becomes a SimJob sent to a remote node.
 
     Usage:
-        from siricon.registry import Registry
-        from siricon.batch_distributor import BatchDistributor
+        from zilver.registry import Registry
+        from zilver.batch_distributor import BatchDistributor
 
         reg = Registry()
         reg.register(node_a.caps)
@@ -256,7 +256,7 @@ class BatchDistributor:
         Execute a parameter batch distributed across eligible nodes.
 
         Args:
-            circuit:      a siricon Circuit instance
+            circuit:      a zilver Circuit instance
             params_batch: (N, n_params) array of parameter sets
             backend:      "sv" | "dm" | "tn"
             observable:   passed to circuit.compile()

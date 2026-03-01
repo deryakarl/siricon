@@ -1,10 +1,4 @@
-"""
-QASM bridge: convert Qiskit QASM 2.0 circuits into Zilver Circuit objects.
-
-This lets the Sirius monorepo pass existing Qiskit-generated circuits directly
-into Zilver for MLX-accelerated landscape computation without rewriting
-circuit generation code.
-"""
+"""QASM 2.0 parser."""
 
 from __future__ import annotations
 import re
